@@ -11,13 +11,11 @@
 #include "pio_usb_ll.h"
 #include "usb_definitions.h"
 
-void bus_init(bus_t *b, bool skip_alarm_pool) {
+void bus_init(bus_t *b) {
     pio_usb_configuration_t cfg = PIO_USB_DEFAULT_CONFIG;
-    cfg.skip_alarm_pool = skip_alarm_pool;
     b->dev  = pio_usb_host_init(&cfg);
     b->root = PIO_USB_ROOT_PORT(0);
     b->pp   = PIO_USB_PIO_PORT(0);
-    b->maxpacket0 = 8;
 }
 
 bool bus_wait_for_connect(bus_t *b) {
@@ -57,13 +55,7 @@ bool bus_open_ep0(bus_t *b, uint8_t maxpacket) {
         .interval = 0,
     };
 
-    if (!pio_usb_host_endpoint_open(0, b->dev->address, (const uint8_t *)&ep0, false)) {
-        return false;
-    }
-
-    b->maxpacket0 = maxpacket;
-
-    return true;
+    return pio_usb_host_endpoint_open(0, b->dev->address, (const uint8_t *)&ep0, false);
 }
 
 void bus_reset_ep0_reopen(bus_t *b) {

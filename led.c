@@ -82,11 +82,6 @@ void led_set_state(int state) {
             break;
         }
 
-        case LED_STATE_RUNNING: {
-            // no touching CYW43 while racing, LED stays on from IDLE
-            break;
-        }
-
         case LED_STATE_SUCCESS: {
             led_set_blinking(500);
             break;

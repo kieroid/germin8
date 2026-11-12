@@ -10,10 +10,9 @@ typedef struct {
     pio_port_t   *pp;
     root_port_t  *root;
     usb_device_t *dev;
-    uint8_t       maxpacket0;
 } bus_t;
 
-void bus_init(bus_t *b, bool skip_alarm_pool);
+void bus_init(bus_t *b);
 
 bool bus_wait_for_connect(bus_t *b);
 
