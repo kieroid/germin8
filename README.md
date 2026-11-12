@@ -53,7 +53,7 @@ The 5V wire is needed. The exploit won't work without it.
 
 Wire colors are not the same on every cable, so check them with a multimeter. Do NOT use USB-C cables, they often have a very different pinout. Keep the cable (with the Lightning end) short.
 
-Power the Pico 2 W from its micro-USB port. The VBUS pin passes that 5V to the Lightning cable. The micro-USB port also shows the log.
+Power the Pico 2 W from its micro-USB port. The VBUS pin passes that 5V to the Lightning cable.
 
 ### Flashing firmware
 
@@ -72,13 +72,7 @@ picotool load -x build/germin8.uf2
 
 3. In a few seconds, the exploit will finish
 
-There are 2 ways you can watch the process:
-
-1. Pico 2 W appears as a virtual COM-port - the exploit logs will be printed there
-
-2. Via on-board LED
-
-LED:
+Watch the on-board LED:
 
 1. Fast blinking - starting (about 5 seconds), then again while sending the boot images
 2. On - ready, or exploit running

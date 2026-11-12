@@ -60,7 +60,8 @@ target_compile_definitions(germin8 PRIVATE
 )
 
 pico_enable_stdio_uart(germin8 0)
-pico_enable_stdio_usb(germin8 1)
+# no log; set this to 1 for one over the micro-USB port
+pico_enable_stdio_usb(germin8 0)
 
 add_subdirectory(pio_usb)
 
