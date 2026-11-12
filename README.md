@@ -1,17 +1,16 @@
-# USBLITER8
+# germin8
 
-Copy of the **usbliter8** source code.
+Boots an iPhone XS Max into [badapple](https://forgejo.toe.quest/kiki/badapple) Linux from a Raspberry Pi Pico 2 W, with no computer.
 
----
+The Pico runs the usbliter8 bootrom exploit, then sends badapple's patched iBSS, device tree, trust cache, GPU firmware and a small m1n1 over USB. m1n1 loads the rest from the phone's NVMe. The images are built into the firmware.
 
-### About this fork
+Based on a Pico 2 W fork of **usbliter8**. The A13 and S4/S5 support was dropped, since only A12 images are built in.
 
-This fork only works on the **Raspberry Pi Pico 2 W**. All other boards (and RP2040) were removed. The exploit code (`exploit.c`) is the same as the original.
-
-What's different:
+What's different from usbliter8:
 
 * Works on the Pico 2 W, including the on-board LED.
-* You can run the exploit again without unplugging the board. When it's done, press and let go of the BOOTSEL button. The board restarts and is ready for the next device.
+* Boots the phone after the exploit.
+* You can run it again without unplugging the board. When it's done, press and let go of the BOOTSEL button.
 
 The original authors say that even small code changes can make the exploit less reliable. If it fails more often than the original, set `LED_CYW43=0` in `CMakeLists.txt` to turn off the LED code and build again.
 
@@ -29,7 +28,7 @@ Neither Magnet Forensics nor any other corporation can stand in the way of discl
 ---
 
 > **SAY NO TO CENSORSHIP!**
-Tethered bootrom exploit for Apple A12, S4/S5 & A13 SoCs (A12X/Z can theoretically be supported as well, but it's not implemented yet).
+Tethered bootrom exploit for the Apple A12. Upstream also supports S4/S5 and A13; this fork dropped them.
 
 ## Bug & exploit write-up
 
@@ -58,10 +57,10 @@ Power the Pico 2 W from its micro-USB port. The VBUS pin passes that 5V to the L
 
 ### Flashing firmware
 
-Build the firmware (see [Building](#building)). Then hold BOOTSEL while plugging in the Pico 2 W, and copy `build/usbliter8.uf2` to the drive that shows up. Or use [picotool](https://github.com/raspberrypi/picotool):
+Build the firmware (see [Building](#building)). Then hold BOOTSEL while plugging in the Pico 2 W, and copy `build/germin8.uf2` to the drive that shows up. Or use [picotool](https://github.com/raspberrypi/picotool):
 
 ```
-picotool load -x build/usbliter8.uf2
+picotool load -x build/germin8.uf2
 ```
 
 ### Exploiting
@@ -81,41 +80,18 @@ There are 2 ways you can watch the process:
 
 LED:
 
-1. Fast blinking - booting (takes about 5 seconds)
+1. Fast blinking - starting (about 5 seconds), then again while sending the boot images
 2. On - ready, or exploit running
-3. Slow blinking - exploit worked!
-4. Off - exploit failed
+3. Slow blinking - the phone is booting
+4. Off - failed
 
-The exploit takes 0.7 - 1.2 seconds to run. When it's done (worked or failed), press and let go of BOOTSEL to restart the board and run it again. No need to unplug it. Restarting with `picotool` or unplugging the board also works.
+The exploit takes 0.7 - 1.2 seconds to run, and sending the images about 2 minutes. When it's done (worked or failed), press and let go of BOOTSEL to restart the board and run it again. The exploit sometimes fails with "too many timeouts"; run it again. No need to unplug it. Restarting with `picotool` or unplugging the board also works.
 
-### After exploiting
+### Booting
 
-Replug the device back to your Mac/PC.
+After the exploit the board sends iBSS, then the rest of the images in recovery mode, then `bootx`. m1n1 boots the newest `.bin` on the phone's FAT partition. Hold volume down for its boot menu. See badapple's README for setting up the NVMe.
 
-In USB serial number you shall see PWND string in the end, for instance:
-
-```
-CPID:8020 CPRV:11 CPFM:03 SCEP:01 BDID:0E ECID:XXXXXXXXXXXXXXXX IBFL:3C SRTG:[iBoot-3865.0.0.4.7] PWND:[usbliter8]
-```
-
-There is a Python control tool (`usbliter8ctl`) in the repo which allows you to demote production mode or boot raw iBoot ("raw" as in decrypted and free of any container).
-
-The control tool depends on `pyusb` that you can get from **pip**.
-
-```
-➜  usbliter8 git:(main) ✗ ./usbliter8ctl
-usage: usbliter8ctl [-h] {boot,demote} ...
-
-Love is Control
-
-positional arguments:
-  {boot,demote}
-    boot         boot raw iBoot
-    demote       demote production mode
-
-options:
-  -h, --help     show this help message and exit
-```
+If the phone is already in this iBSS's recovery mode, the board skips the exploit and the iBSS.
 
 ## Building
 
@@ -129,12 +105,12 @@ Here are the exact versions of Pico SDK and ARM toolchain that we used:
 * ARM toolchain - 15.2.Rel1
 
 ```
-cd usbliter8
-cmake -S . -B build -DPICO_SDK_PATH=$PICO_SDK_PATH -DPICO_TOOLCHAIN_PATH=$PICO_TOOLCHAIN_PATH
+cd germin8
+cmake -S . -B build -DPICO_SDK_PATH=$PICO_SDK_PATH -DPICO_TOOLCHAIN_PATH=$PICO_TOOLCHAIN_PATH -DBADAPPLE_IBOOT=/path/to/badapple/build/iboot
 cmake --build build
 ```
 
-Change `$PICO_SDK_PATH` and `$PICO_TOOLCHAIN_PATH` to your paths. The board is always `pico2_w`, no need to set it. The Pico SDK needs the `lib/cyw43-driver` and `lib/tinyusb` submodules.
+Change `$PICO_SDK_PATH` and `$PICO_TOOLCHAIN_PATH` to your paths. `BADAPPLE_IBOOT` is badapple's `build/iboot` after `make images` and `make bootbin`. The images are Apple's, so they are not in this repository. The board is always `pico2_w`, no need to set it. The Pico SDK needs the `lib/cyw43-driver` and `lib/tinyusb` submodules.
 
 ## Authors
 

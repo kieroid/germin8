@@ -1,0 +1,18 @@
+// The phone's boot images, from badapple's build/iboot. CMake fills in paths.
+.section .rodata.images, "a"
+
+.macro image name, path
+.balign 4
+.global \name\()_start, \name\()_end
+\name\()_start:
+.ifnb \path
+.incbin "\path"
+.endif
+\name\()_end:
+.endm
+
+image ibss, "@IMG_IBSS@"
+image devicetree, "@IMG_DEVICETREE@"
+image trustcache, "@IMG_TRUSTCACHE@"
+image gfx, "@IMG_GFX@"
+image kernelcache, "@IMG_KERNELCACHE@"

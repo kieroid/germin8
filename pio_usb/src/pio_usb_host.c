@@ -253,9 +253,18 @@ static int usb_setup_transaction(pio_port_t *pp, endpoint_t *ep);
 static int usb_in_transaction(pio_port_t *pp, endpoint_t *ep);
 static int usb_out_transaction(pio_port_t *pp, endpoint_t *ep);
 
+// germin8: let bulk and control transfers run several transactions per frame
+// instead of one. Off during the exploit, which depends on the stock timing.
+volatile bool pio_usb_host_burst;
+
 void __not_in_flash_func(pio_usb_host_frame)(void) {
   if (!timer_active) {
     return;
+  }
+
+  uint32_t frame_start = 0;
+  if (pio_usb_host_burst) {
+    frame_start = time_us_32();
   }
 
   pio_port_t *pp = PIO_USB_PIO_PORT(0);
@@ -304,6 +313,8 @@ void __not_in_flash_func(pio_usb_host_frame)(void) {
             pp->need_pre = true;
           }
 
+          if (!pio_usb_host_burst) {
+          // stock path, as the exploit expects it
           if (ep->ep_num == 0 && ep->data_id == USB_PID_SETUP) {
             usb_setup_transaction(pp, ep);
           } else {
@@ -316,6 +327,28 @@ void __not_in_flash_func(pio_usb_host_frame)(void) {
             if (is_periodic) {
               ep->interval_counter = ep->interval - 1;
             }
+          }
+          } else {
+          uint16_t done;
+          do {
+            done = ep->actual_len;
+            if (ep->ep_num == 0 && ep->data_id == USB_PID_SETUP) {
+              usb_setup_transaction(pp, ep);
+              break;
+            }
+            if (ep->ep_num & EP_IN) {
+              usb_in_transaction(pp, ep);
+            } else {
+              usb_out_transaction(pp, ep);
+            }
+
+            if (is_periodic) {
+              ep->interval_counter = ep->interval - 1;
+              break;
+            }
+            // keep going while packets are accepted and the frame has room
+          } while (ep->has_transfer && ep->actual_len != done &&
+                   time_us_32() - frame_start < 700);
           }
 
           if (ep->need_pre) {

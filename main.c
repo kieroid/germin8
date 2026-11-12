@@ -9,6 +9,7 @@
 #include "pico/multicore.h"
 #include "pico/stdlib.h"
 
+#include "boot.h"
 #include "exploit.h"
 #include "led.h"
 #include "usb.h"
@@ -79,7 +80,6 @@ void do_auto(void) {
          *
          * So we sleep a bit, reset the bus and try again
          *
-         * UPDATE: same behavior for already PWNED devices
          */
         if (ret == -2) {
             sleep_ms(CONNECTION_FAIL_SLEEP_MS);
@@ -87,8 +87,14 @@ void do_auto(void) {
             continue;
         }
 
+        /* iBSS already up, from a run that stopped after it */
+        if (ret < 0 && boot_in_recovery()) {
+            printf("\n%s\n", boot_run(true) ? "boot failed" : "success");
+            reboot_on_bootsel();
+        }
+
         /* no-go failure, bailing */
-        if (ret != 0) {
+        if (ret < 0) {
             led_set_state(LED_STATE_ERROR);
             printf("\nfatal failure\n");
             reboot_on_bootsel();
@@ -98,7 +104,8 @@ void do_auto(void) {
         break;
     }
 
-    printf("\nsuccess\n");
+    // pwned now or already, so boot it
+    printf("\n%s\n", boot_run(false) ? "boot failed" : "success");
     reboot_on_bootsel();
 }
 
